@@ -1,0 +1,9 @@
+# Persönliche Daten – nicht versioniert
+local-data.js
+local-data.*.js
+
+# Betriebssystem / Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/

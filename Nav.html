@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Helium Start</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <!-- Get SRI hash at https://cdnjs.com/libraries/font-awesome/6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&display=swap">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./polish.css">
+    <link rel="stylesheet" href="./time-mode.css">
+    <link rel="stylesheet" href="./nav-ui.css">
+</head>
+<body>
+    <a class="skip-link" href="#silos">Zu den Links springen</a>
+    <main class="page">
+
+        <!-- ── Top bar ──────────────────────────────────────────────────── -->
+        <header class="topbar" id="topbar">
+            <div class="tb-head">
+                <div class="tb-brand">
+                    <h1><button id="logoBtn" class="logo" type="button" tabindex="-1" aria-hidden="true">🚀</button> Helium Start</h1>
+                    <div class="tb-sub">
+                        <p class="subtitle" id="greeting">Schneller Zugriff, sauber sortiert</p>
+                        <p class="mode-why" id="modeWhy" aria-live="polite"></p>
+                    </div>
+                </div>
+                <time id="clock" class="clock" aria-live="off"></time>
+            </div>
+
+            <div class="tb-controls">
+                <div class="search-wrap">
+                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input id="searchInput" type="search"
+                           placeholder="Links filtern oder g Begriff …"
+                           aria-label="Links filtern oder mit Kürzel im Web suchen, zum Beispiel g Hunde">
+                    <kbd class="search-hint" aria-hidden="true">/</kbd>
+                </div>
+
+                <div id="modeSwitch" class="mode-switch" role="group" aria-label="Tageszeit-Modus">
+                    <span class="mode-pill" aria-hidden="true"></span>
+                    <button type="button" data-mode="auto" title="Automatisch nach Uhrzeit, Verlauf und deinen Klicks (Taste M)"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto</button>
+                    <button type="button" data-mode="work" title="Work-Links zuerst"><i class="fa-solid fa-briefcase"></i> Work</button>
+                    <button type="button" data-mode="private" title="Freizeit-Links zuerst"><i class="fa-solid fa-couch"></i> Freizeit</button>
+                    <button type="button" data-mode="all" title="Nicht sortieren"><i class="fa-solid fa-layer-group"></i> Alle</button>
+                </div>
+
+                <div class="tb-actions">
+                    <button id="paletteBtn" class="icon-btn" type="button" title="Springen und Befehle (Strg+K)" aria-label="Befehlspalette öffnen">
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                    <button id="notesToggle" class="icon-btn" type="button"
+                            title="Notizen (Taste N)" aria-label="Notizen ein- oder ausblenden"
+                            aria-expanded="false">
+                        <i class="fa-solid fa-note-sticky"></i>
+                    </button>
+                    <a id="insightsLink" class="icon-btn" href="./insights.html"
+                       title="Verlaufs-Auswertung" aria-label="Verlaufs-Auswertung öffnen">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </a>
+                    <button id="prefsBtn" class="icon-btn" type="button"
+                            title="Einstellungen" aria-label="Einstellungen öffnen">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <button id="editModeBtn" class="icon-btn text-btn" type="button" title="Bearbeiten (Taste E)">Bearbeiten</button>
+
+                    <div class="menu-wrap">
+                        <button id="moreBtn" class="icon-btn" type="button" title="Mehr" aria-label="Mehr Aktionen"
+                                aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                        <div id="moreMenu" class="menu" role="menu" aria-label="Mehr Aktionen" hidden>
+                            <button id="toggleAllBtn" type="button" role="menuitem">Alle einklappen</button>
+                            <button id="exportBtn" type="button" role="menuitem"><i class="fa-solid fa-file-export"></i> Links exportieren</button>
+                            <button id="importBtn" type="button" role="menuitem"><i class="fa-solid fa-file-import"></i> Links importieren</button>
+                            <button id="helpBtn" type="button" role="menuitem"><i class="fa-regular fa-keyboard"></i> Tastenkürzel</button>
+                            <input id="importFileInput" type="file" accept=".json" hidden aria-hidden="true">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notizen: klappt über die ganze Breite auf -->
+            <div id="notesWidget" class="notes-widget"
+                 aria-label="Notizen" role="region">
+                <textarea id="notesArea"
+                          placeholder="Notizen … werden automatisch gespeichert"
+                          aria-label="Notizen"></textarea>
+            </div>
+        </header>
+
+        <!-- ── Pinned quick bar (favorites strip) ───────────────────────── -->
+        <nav id="quickBar" class="quick-bar"
+             aria-label="Angepinnte Favoriten" hidden></nav>
+
+        <!-- ── Most used this week (from the history snapshot) ──────────── -->
+        <nav id="usageBar" class="quick-bar usage-bar"
+             aria-label="Typische Dienste zu dieser Uhrzeit" hidden></nav>
+
+        <!-- ── Stats + silo grid ────────────────────────────────────────── -->
+        <section id="stats"  class="stats"  aria-live="polite"></section>
+        <section id="silos"  class="silos"  aria-label="Link-Kategorien"></section>
+
+    </main>
+
+    <!-- ── Link editor modal ────────────────────────────────────────────── -->
+    <dialog id="linkModal" class="link-modal" aria-labelledby="modalTitle">
+        <h2 id="modalTitle" class="modal-heading">Link bearbeiten</h2>
+        <div class="modal-form">
+            <input id="modalLinkId" type="hidden">
+
+            <label class="modal-label">
+                <span>Kategorie</span>
+                <input id="modalSiloTitle" type="text" placeholder="Name der Kategorie">
+            </label>
+            <label class="modal-label">
+                <span>Titel <em class="required">*</em></span>
+                <input id="modalLinkTitle" type="text" placeholder="Titel des Links">
+            </label>
+            <label class="modal-label">
+                <span>URL <em class="required">*</em></span>
+                <input id="modalLinkUrl" type="url" placeholder="https://…">
+            </label>
+            <label class="modal-label">
+                <span>Icon <em class="hint">Font-Awesome-Klasse</em></span>
+                <input id="modalLinkIcon" type="text" placeholder="fa-solid fa-link">
+            </label>
+            <label class="modal-label">
+                <span>Tags <em class="hint">mit Komma getrennt</em></span>
+                <input id="modalLinkTags" type="text" placeholder="ai, python, …">
+            </label>
+            <label class="modal-label modal-checkbox">
+                <input id="modalLinkFavorite" type="checkbox">
+                <span>Als Favorit markieren</span>
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button id="modalSaveBtn"   type="button" class="btn-primary">Speichern</button>
+            <button id="modalCancelBtn" type="button" class="btn-secondary">Abbrechen</button>
+            <button id="modalDeleteBtn" type="button" class="btn-danger">Löschen</button>
+        </div>
+    </dialog>
+
+    <!-- ── Time-of-day settings modal ───────────────────────────────────── -->
+    <dialog id="prefsModal" class="link-modal" aria-labelledby="prefsTitle">
+        <h2 id="prefsTitle" class="modal-heading">Tageszeit-Modus</h2>
+        <div class="modal-form">
+            <label class="modal-label">
+                <span>Name <em class="hint">für die Begrüßung, leer = ohne</em></span>
+                <input id="prefName" type="text" maxlength="24" autocomplete="off">
+            </label>
+            <div class="pref-row">
+                <label class="modal-label">
+                    <span>Arbeitszeit von</span>
+                    <input id="prefStart" type="number" min="0" max="23" step="1">
+                </label>
+                <label class="modal-label">
+                    <span>bis (Uhr)</span>
+                    <input id="prefEnd" type="number" min="1" max="24" step="1">
+                </label>
+            </div>
+            <label class="modal-label modal-checkbox">
+                <input id="prefWeekend" type="checkbox">
+                <span>Am Wochenende gilt dieselbe Arbeitszeit</span>
+            </label>
+            <label class="modal-label">
+                <span>Dichte der Link-Karten</span>
+                <select id="prefDensity">
+                    <option value="comfortable">Angenehm</option>
+                    <option value="compact">Kompakt (mehr Links auf einmal)</option>
+                </select>
+            </label>
+            <div class="pref-learned">
+                <span id="prefLearned"></span>
+                <button id="prefForget" type="button" class="btn-danger">Gelerntes zurücksetzen</button>
+            </div>
+            <p class="hint">Helium zählt mit, welche Links du um welche Uhrzeit öffnest, und gewichtet das im Auto-Modus. Gespeichert wird nur in diesem Browser. Zuordnung einer Kategorie ändern: Edit, dann der Knopf in ihrer Kopfzeile.</p>
+            <p id="prefMsg" class="hint" role="alert"></p>
+        </div>
+        <div class="modal-actions">
+            <button id="prefSave" type="button" class="btn-primary">Speichern</button>
+            <button id="prefCancel" type="button" class="btn-secondary">Abbrechen</button>
+        </div>
+    </dialog>
+
+    <!-- ── Silo (category) template ─────────────────────────────────────── -->
+    <template id="siloTemplate">
+        <article class="silo">
+            <div class="silo-header">
+                <!-- Collapse trigger — must NOT contain other buttons -->
+                <button class="silo-collapse-btn" type="button" aria-expanded="true">
+                    <i class="silo-icon"></i>
+                    <span class="silo-title"></span>
+                </button>
+                <div class="silo-header-right">
+                    <button class="open-all-btn" type="button"
+                            title="Open all links in new tabs">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                    </button>
+                    <span class="silo-meta"></span>
+                </div>
+            </div>
+            <div class="silo-links"></div>
+        </article>
+    </template>
+
+    <!-- ── Link card template ───────────────────────────────────────────── -->
+    <template id="linkTemplate">
+        <a class="link-card" target="_blank" rel="noopener noreferrer">
+            <i class="link-icon"></i>
+            <span class="link-text-wrap">
+                <span class="link-title"></span>
+                <span class="link-host"></span>
+                <span class="link-tags"></span>
+            </span>
+        </a>
+    </template>
+
+    <script src="./ui-kit.js"></script>
+    <script src="./links-data.js"></script>
+    <!-- Optional: eigene Links + echter Verlauf. Nicht im Repo (siehe .gitignore). -->
+    <script src="./local-data.js"></script>
+    <script src="./storage.js"></script>
+    <script src="./app.js"></script>
+    <script src="./helium-learn.js"></script>
+    <script src="./history-data.js"></script>
+    <script src="./insights-core.js"></script>
+    <script src="./usage-strip.js"></script>
+    <script src="./time-mode.js"></script>
+    <script src="./command-palette.js"></script>
+    <script src="./nav-ui.js"></script>
+</body>
+</html>

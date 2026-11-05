@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Helium Insights</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&display=swap">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./polish.css">
+    <link rel="stylesheet" href="./insights.css">
+</head>
+<body>
+    <a class="skip-link" href="#kpis">Zu den Kennzahlen springen</a>
+    <main class="page insights">
+
+        <header class="topbar">
+            <div class="topbar-brand">
+                <h1>📊 Helium Insights</h1>
+                <p class="subtitle" id="rangeLabel">Auswertung deines Browserverlaufs</p>
+            </div>
+            <div class="topbar-actions">
+                <button id="exportMd" class="pill-btn" type="button" title="Bericht als Markdown speichern"><i class="fa-solid fa-file-arrow-down"></i> Bericht</button>
+                <button id="importOpenBtn" class="pill-btn" type="button"><i class="fa-solid fa-paste"></i> Verlauf einlesen</button>
+                <button id="resetBtn" class="pill-btn" type="button" hidden><i class="fa-solid fa-rotate-left"></i> Snapshot</button>
+                <a class="pill-btn" href="./Nav.html"><i class="fa-solid fa-arrow-left"></i> Helium Start</a>
+            </div>
+        </header>
+
+        <nav class="secnav" id="secnav" aria-label="Abschnitte">
+            <a href="#kpis">Übersicht</a>
+            <a href="#sec-activity">Aktivität</a>
+            <a href="#sec-top">Dienste</a>
+            <a href="#sec-profiles">Profile</a>
+            <a href="#sec-mode">Tagesmodus</a>
+            <a href="#sec-helium">Helium</a>
+            <a href="#sec-claude">Claude</a>
+        </nav>
+
+        <section id="kpis" class="kpis" aria-label="Kennzahlen"></section>
+        <p id="filterNote" class="filter-note" hidden></p>
+
+        <div class="row two">
+            <section class="card" id="sec-activity">
+                <h2><i class="fa-solid fa-table-cells"></i> Wann bist du online?</h2>
+                <p class="card-sub">Aufrufe pro Tag und Stunde</p>
+                <div id="heatmap" class="heatmap"></div>
+                <div class="hm-legend" aria-hidden="true"><span>weniger</span><i></i><span>mehr</span></div>
+            </section>
+            <section class="card">
+                <h2><i class="fa-solid fa-chart-pie"></i> Wofür nutzt du den Browser?</h2>
+                <p class="card-sub">Anteil je Kategorie</p>
+                <div id="donut" class="donut-wrap"></div>
+            </section>
+        </div>
+
+        <div class="row two">
+            <section class="card" id="sec-top">
+                <h2><i class="fa-solid fa-ranking-star"></i> Top-Dienste</h2>
+                <p class="card-sub">Meistbesuchte Seiten, zusammengefasst nach Dienst</p>
+                <div id="topServices" class="top-services"></div>
+            </section>
+            <section class="card">
+                <h2><i class="fa-solid fa-moon"></i> Tagesrhythmus</h2>
+                <p class="card-sub">Aufrufe je Uhrzeit, gestapelt nach Kategorie</p>
+                <div id="hourChart" class="hour-chart"></div>
+                <div id="hourLegend" class="legend"></div>
+            </section>
+        </div>
+
+        <section class="card" id="sec-profiles">
+            <h2><i class="fa-solid fa-id-card"></i> Profile &amp; Konten</h2>
+            <p class="card-sub" id="ghAnswer"></p>
+            <div id="ghProfiles" class="profiles"></div>
+            <h3>Weitere Konten im Verlauf</h3>
+            <div id="accounts" class="chips"></div>
+            <h3>Zuletzt genutzte Repos</h3>
+            <div id="repos" class="repos"></div>
+        </section>
+
+        <section class="card">
+            <h2><i class="fa-solid fa-window-restore"></i> Vorschlag: drei Browser-Profile</h2>
+            <p class="card-sub">Aus den Kategorien abgeleitet, damit Work, Studium und Privat nicht mehr durcheinanderlaufen.</p>
+            <div id="browserProfiles" class="bprofiles"></div>
+        </section>
+
+        <section class="card" id="sec-mode">
+            <h2><i class="fa-solid fa-sun"></i> Dein Tagesmodus</h2>
+            <p class="card-sub">So entscheidet Helium Start im Auto-Modus, was nach vorn kommt: Erwartung nach Uhrzeit, gemischt mit deinem Verlauf. Blau = Work, Rosa = Freizeit.</p>
+            <div id="modeStrip" class="mode-strip"></div>
+        </section>
+
+        <section class="card" id="obsCard" hidden>
+            <h2><i class="fa-solid fa-lightbulb"></i> Auffälligkeiten</h2>
+            <p class="card-sub">Von Hand aus Uhrzeiten und Seitentiteln gelesen</p>
+            <div id="observations" class="obs"></div>
+        </section>
+
+        <div class="row two">
+            <section class="card" id="sec-helium">
+                <h2><i class="fa-solid fa-plus"></i> Fehlt in Helium</h2>
+                <p class="card-sub">Oft besucht, aber (noch) kein Link</p>
+                <div id="suggestions" class="suggest"></div>
+            </section>
+            <section class="card">
+                <h2><i class="fa-solid fa-broom"></i> In Helium, aber nicht besucht</h2>
+                <p class="card-sub" id="unusedSub"></p>
+                <div id="unused"></div>
+            </section>
+        </div>
+
+        <section class="card claude-card" id="sec-claude">
+            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Mit Claude auswerten</h2>
+            <p class="card-sub">Wähle eine Frage. Es gehen nur Dienstnamen und Zähler mit, keine URLs oder Seitentitel. Du siehst den Text vorher und kannst ihn ändern.</p>
+            <div id="claudePresets" class="presets"></div>
+            <textarea id="claudePrompt" rows="9" aria-label="Prompt an Claude"></textarea>
+            <div class="claude-actions">
+                <button id="claudeOpen" class="btn-primary" type="button"><i class="fa-solid fa-arrow-up-right-from-square"></i> In Claude öffnen</button>
+                <button id="claudeCopy" class="btn-secondary" type="button"><i class="fa-regular fa-copy"></i> Kopieren</button>
+                <span id="claudeHint" class="hint"></span>
+            </div>
+
+            <div class="chat">
+                <h3>Direkt hier antworten lassen</h3>
+                <p class="card-sub">Mit deinem eigenen Anthropic-API-Schlüssel. Er bleibt in diesem Browser (localStorage), die Anfrage geht direkt an api.anthropic.com und kostet nach deinem API-Tarif. Auf einem geteilten Rechner besser nicht speichern.</p>
+                <div class="chat-key">
+                    <input id="apiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" aria-label="Anthropic API-Schlüssel">
+                    <input id="apiModel" type="text" value="claude-sonnet-5-5" spellcheck="false" aria-label="Modell">
+                    <button id="keyClear" class="btn-secondary" type="button">Schlüssel löschen</button>
+                </div>
+                <button id="chatSend" class="btn-primary" type="button"><i class="fa-solid fa-paper-plane"></i> Hier fragen</button>
+                <div id="chatLog" class="chat-log" aria-live="polite"></div>
+                <form id="chatFollow" class="chat-follow" hidden>
+                    <input id="followInput" type="text" placeholder="Nachfrage…" aria-label="Nachfrage an Claude">
+                    <button class="btn-primary" type="submit">Senden</button>
+                </form>
+            </div>
+        </section>
+
+        <p class="foot" id="footNote"></p>
+    </main>
+
+    <dialog id="importModal" class="link-modal">
+        <h2 class="modal-heading">Verlauf einlesen</h2>
+        <p class="card-sub">Öffne die Verlaufsseite, markiere alles mit Strg+A, kopiere mit Strg+C und füge es hier ein. Gespeichert werden nur Datum, Stunde, Host und Zähler, keine Titel.</p>
+        <textarea id="importText" rows="10" placeholder="Heute - Sonntag, 1. November 2026&#10;22:41&#10;GitHub&#10;github.com&#10;…"></textarea>
+        <p id="importMsg" class="hint"></p>
+        <div class="modal-actions">
+            <button id="importGo" class="btn-primary" type="button">Auswerten</button>
+            <button id="importCancel" class="btn-secondary" type="button">Abbrechen</button>
+        </div>
+    </dialog>
+
+    <script src="./ui-kit.js"></script>
+    <script src="./links-data.js"></script>
+    <!-- Optional: eigene Links + echter Verlauf. Nicht im Repo (siehe .gitignore). -->
+    <script src="./local-data.js"></script>
+    <script src="./storage.js"></script>
+    <script src="./helium-learn.js"></script>
+    <script src="./history-data.js"></script>
+    <script src="./insights-core.js"></script>
+    <script src="./insights-chat.js"></script>
+    <script src="./insights-ui.js"></script>
+</body>
+</html>

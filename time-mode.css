@@ -1,0 +1,82 @@
+/* ══════════════════════════════════════════════════════════════
+   Tageszeit-Modus (time-mode.js)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Hintergrund je Tageszeit (Tag = Standard aus styles.css) ───── */
+body[data-phase="morning"] {
+    background:
+        radial-gradient(circle at 12% 8%,  rgba(251, 191, 36, 0.24), transparent 46%),
+        radial-gradient(circle at 85% 18%, rgba(45, 212, 191, 0.20), transparent 50%),
+        linear-gradient(160deg, #0f1f2e, #1d2b4a);
+}
+body[data-phase="evening"] {
+    background:
+        radial-gradient(circle at 12% 8%,  rgba(244, 114, 182, 0.24), transparent 46%),
+        radial-gradient(circle at 85% 18%, rgba(139, 92, 246, 0.28), transparent 50%),
+        linear-gradient(160deg, #1a1033, #2d1450);
+}
+body[data-phase="night"] {
+    background:
+        radial-gradient(circle at 12% 8%,  rgba(59, 130, 246, 0.12), transparent 46%),
+        radial-gradient(circle at 85% 18%, rgba(99, 102, 241, 0.14), transparent 50%),
+        linear-gradient(160deg, #05070f, #0b0e2a);
+}
+body[data-phase="night"] .silo,
+body[data-phase="night"] .quick-bar,
+body[data-phase="night"] .topbar { box-shadow: none; }
+
+/* ── Begrüßung und Modus-Schalter ───────────────────────────────── */
+#greeting { color: var(--text); font-size: 0.92rem; font-weight: 500; }
+.mode-why { margin-top: 3px; color: var(--muted); font-size: 0.72rem; }
+.mode-why:empty { display: none; }
+
+.mode-switch {
+    display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px;
+    border: 1px solid var(--border); background: rgba(2, 6, 23, 0.35);
+}
+.mode-switch button {
+    border: none; background: transparent; color: var(--muted); font: inherit; font-size: 0.8rem;
+    padding: 6px 10px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.mode-switch button:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.mode-switch button.active { background: rgba(96, 165, 250, 0.2); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
+.mode-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Was gerade nicht dran ist, tritt zurück ────────────────────── */
+.silo.off-mode { opacity: 0.6; transition: opacity 0.2s ease; }
+.silo.off-mode:hover, .silo.off-mode:focus-within { opacity: 1; }
+.qb-link.off-mode { opacity: 0.55; }
+.qb-link.off-mode:hover { opacity: 1; }
+
+/* ── Zuordnung je Kategorie (nur im Edit-Modus) ─────────────────── */
+.group-btn {
+    border: 1px solid rgba(96, 165, 250, 0.35); background: rgba(96, 165, 250, 0.1); color: var(--accent);
+    border-radius: 999px; padding: 2px 9px; font: inherit; font-size: 0.7rem; cursor: pointer; white-space: nowrap;
+}
+.group-btn:hover { background: rgba(96, 165, 250, 0.25); }
+.group-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Einstellungen ───────────────────────────────────────────────── */
+.pref-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-label input[type="number"] {
+    padding: 9px 12px; background: rgba(2, 6, 23, 0.5); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font: inherit; font-size: 0.88rem; outline: none;
+}
+.modal-label input[type="number"]:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
+.pref-learned { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.84rem; color: var(--muted); }
+.pref-learned .btn-danger { margin-left: 0; padding: 6px 12px; font-size: 0.78rem; }
+#prefMsg { color: #fca5a5; min-height: 1.2em; }
+.modal-label select {
+    padding: 9px 12px; background: rgba(2, 6, 23, 0.5); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font: inherit; font-size: 0.88rem; outline: none;
+}
+.modal-label select:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+@media (max-width: 720px) {
+    .mode-switch { width: 100%; }
+    .mode-switch button { flex: 1; justify-content: center; padding: 7px 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .silo.off-mode { transition: none; }
+}
