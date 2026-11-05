@@ -23,7 +23,7 @@
     // und eigene Zuordnungen (Bearbeiten-Modus) haben Vorrang.
     const GROUP_BY_TITLE = {
         "Favorites": "both",
-        "Research & Papers": "work", "Development": "work", "AI Tools": "work", "Learning": "work",
+        "Research & Papers": "work", "Development": "work", "Design": "work", "AI Tools": "work", "Learning": "work",
         "Google Sheets": "work", "School & Mail": "work", "Work & Ops": "work", "Domains & Hosting": "work",
         "Shopping & Style": "private", "Events & Places": "private", "Communities & Social": "private",
         "Media & Streaming": "private", "Gaming": "private", "Eigene Projekte": "private"
