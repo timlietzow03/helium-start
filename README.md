@@ -1,5 +1,7 @@
 # Helium Start
 
+![Helium Start start page with time-of-day mode](docs/screenshot.png)
+
 A personal browser start page with a time-of-day mode, a command palette, notes,
 and a small analytics dashboard for your own browsing history. Written in plain
 HTML, CSS and JavaScript — **no build step, no backend, no framework, no tracking**.
