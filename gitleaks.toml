@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------
+# gitleaks.toml              Template version: 1.0.0
+#
+# Base gitleaks config. Copy to the ROOT of a repo as `gitleaks.toml`.
+# Used by workflows/secret-scan.yml and hooks/pre-commit when the file exists.
+#
+# It keeps ALL default gitleaks rules and only adds an allowlist.
+# Rules of thumb for the allowlist:
+#   - Allow as narrowly as you can: one path or one exact value, never a
+#     whole directory such as `src/`.
+#   - Every entry needs a `description` that says why it is safe.
+#   - A real secret that was committed is NOT a false positive. Rotate it
+#     first; do not allowlist it.
+# Other ways to silence a single finding:
+#   - add `gitleaks:allow` in a comment on the same line
+#   - add the finding's fingerprint to a `.gitleaksignore` file
+# ---------------------------------------------------------------------------
+title = "Base gitleaks config"
+
+[extend]
+useDefault = true
+
+# ===========================================================================
+# ALLOWLIST - add entries below. Everything in this section is optional.
+# ===========================================================================
+
+# Example 1: a test fixture path that contains fake credentials on purpose.
+# Uncomment and adjust the path (regular expression, matched against the
+# file path relative to the repo root).
+#
+# [[allowlists]]
+# description = "Fake credentials used by unit tests"
+# paths = [
+#   '''tests/fixtures/fake-credentials\.json''',
+# ]
+
+# Example 2: a documented dummy value that appears in docs or example config.
+# Uncomment and replace the value with the exact placeholder you use.
+#
+# [[allowlists]]
+# description = "Placeholder key shown in docs/setup.md"
+# regexes = [
+#   '''EXAMPLE_NOT_A_REAL_KEY_0000''',
+# ]

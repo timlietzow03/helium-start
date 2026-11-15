@@ -1,0 +1,120 @@
+# ---------------------------------------------------------------------------
+# forbidden-files.yml        Template version: 1.0.0
+#
+# WHAT IT DOES
+#   Fails when a file that must never be tracked by git is in the tree:
+#   real .env files, private keys, cost logs, local config, backups, database
+#   dumps, local Claude settings. It checks file NAMES with `git ls-files`
+#   (no third-party action, a few seconds, no history needed). Content is
+#   the job of secret-scan.yml.
+#
+# SUITS
+#   Every repo. Cheap enough to run on every push and pull request.
+#
+# WHAT TO ADJUST
+#   Only FORBIDDEN_PATTERNS below. It is the single list; hooks/pre-commit
+#   carries a copy of the same list, keep the two in sync.
+#   Pattern rules (one per line):
+#     name.ext     file with this exact name, in any folder
+#     *.ext        glob on the file name, in any folder
+#     dir/         any folder with this name, in any folder
+#     a/b.json     path ending in a/b.json
+#     !pattern     EXCEPTION: files matching it are allowed again
+#   Matching ignores upper/lower case. To allow one specific file in a repo
+#   (for example a harmless test key), add `!tests/fixtures/dummy.pem`.
+#
+# NOTES
+#   - permissions: contents: read is enough.
+#   - Fails on any push, so a forbidden file on a feature branch is reported
+#     even before a pull request exists.
+# ---------------------------------------------------------------------------
+name: forbidden-files
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forbidden-files-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # --- THE LIST: edit here ------------------------------------------------
+  FORBIDDEN_PATTERNS: |
+    .env
+    .env.*
+    !*.example
+    *.pem
+    *.key
+    *.p12
+    COSTS.md
+    config.local.toml
+    backups/
+    *.sql.gz
+    *.dump
+    .claude/settings.local.json
+  # -------------------------------------------------------------------------
+
+jobs:
+  forbidden-files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out (no history needed)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fail on forbidden tracked files
+        run: |
+          set -euo pipefail
+          shopt -s nocasematch
+
+          allow=()
+          deny=()
+          while IFS= read -r line; do
+            line="${line%"${line##*[![:space:]]}"}" # trim trailing whitespace
+            [ -z "$line" ] && continue
+            case "$line" in
+              '!'*) allow+=("${line:1}") ;;
+              *)    deny+=("$line") ;;
+            esac
+          done <<< "$FORBIDDEN_PATTERNS"
+
+          # Does path $1 match pattern $2? (rules in the header)
+          matches() {
+            local path="$1" pat="$2"
+            if [[ "$pat" == */ ]]; then
+              [[ "/$path" == *"/$pat"* ]]
+            elif [[ "$pat" == */* ]]; then
+              [[ "/$path" == */$pat ]]
+            else
+              # shellcheck disable=SC2053 # the glob match is intended
+              [[ "${path##*/}" == $pat ]]
+            fi
+          }
+
+          bad=0
+          while IFS= read -r -d '' file; do
+            hit=""
+            for pat in "${deny[@]}"; do
+              if matches "$file" "$pat"; then hit="$pat"; break; fi
+            done
+            [ -z "$hit" ] && continue
+            for pat in "${allow[@]}"; do
+              if matches "$file" "$pat"; then hit=""; break; fi
+            done
+            [ -z "$hit" ] && continue
+            echo "::error file=${file}::Forbidden file is tracked (matches '${hit}'). Run: git rm --cached -- '${file}', add it to .gitignore, and rotate anything secret in it."
+            bad=1
+          done < <(git ls-files -z)
+
+          if [ "$bad" -ne 0 ]; then
+            echo "Forbidden files found. Removing them from the tree does not remove them from history."
+            exit 1
+          fi
+          echo "No forbidden files tracked."

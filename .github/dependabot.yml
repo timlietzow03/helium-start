@@ -1,0 +1,24 @@
+# ---------------------------------------------------------------------------
+# dependabot.yml             Template version: 1.0.0
+#
+# Weekly update pull requests for the GitHub Actions pinned in
+# .github/workflows/. Minor and patch updates come as one grouped PR; majors
+# are separate PRs. helium-start has no npm or Python dependencies, so only
+# the github-actions block of the library template is kept.
+# `cooldown` waits a few days after a release before proposing it.
+# ---------------------------------------------------------------------------
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 3
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
