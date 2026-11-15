@@ -1,0 +1,185 @@
+# ---------------------------------------------------------------------------
+# static-site-ci.yml         Template version: 1.0.0
+#
+# WHAT IT DOES
+#   Two checks for hand-written static sites, no build step needed:
+#     1. HTML validation with html-validate (pinned, run through npx). It
+#        uses the "recommended" rule set minus the purely stylistic rules, so
+#        it fails on broken structure (unclosed or misnested tags, duplicate
+#        ids, missing alt text, bad attributes), not on code style.
+#     2. Internal link check: every relative href/src in every .html file
+#        must point to an existing file, and every #fragment must match an id
+#        or name in the target page. External links (http, https, mailto,
+#        tel, //cdn...) are NOT checked: that makes the job flaky and slow.
+#
+# SUITS
+#   Plain static sites without their own checks: helium-start.
+#   createtim already has its own ci, do not add this on top.
+#
+# WHAT TO ADJUST (the values in `env:` below)
+#   SITE_DIR        folder with the HTML files (".", "public", "docs" ...).
+#   PRETTY_URLS     "true": a link to /about is accepted if about.html or
+#                   about/index.html exists (Cloudflare Pages, Netlify and
+#                   GitHub Pages behave that way). "false": exact files only.
+#   HTML_VALIDATE_VERSION   pinned version.
+#   To change the rules, add a `.htmlvalidate.json` to the repo root; the
+#   job then uses it instead of the built-in one.
+#
+# NOTES
+#   - permissions: contents: read is enough.
+#   - Needs Node only for html-validate; the link check is plain Python 3 from
+#     the runner image, no packages.
+#   - Limits: a <base href> tag is ignored; links built by JavaScript are not
+#     seen; root-relative links (/x) are resolved against SITE_DIR, so a site
+#     served from a sub-path (user.github.io/repo/) needs relative links.
+# ---------------------------------------------------------------------------
+name: static-site-ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-site-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SITE_DIR: "."
+  PRETTY_URLS: "true"
+  HTML_VALIDATE_VERSION: "11.18.0"
+  NODE_VERSION: "22"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate HTML
+        run: |
+          set -euo pipefail
+          cfg=".htmlvalidate.json"
+          if [ ! -f "$cfg" ]; then
+            cfg="${RUNNER_TEMP}/htmlvalidate.json"
+            cat > "$cfg" <<'JSON'
+          {
+            "extends": ["html-validate:recommended"],
+            "rules": {
+              "doctype-style": "off",
+              "void-style": "off",
+              "attribute-boolean-style": "off",
+              "attribute-empty-style": "off",
+              "attr-quotes": "off",
+              "no-inline-style": "off",
+              "no-trailing-whitespace": "off",
+              "require-sri": "off",
+              "prefer-native-element": "off",
+              "no-redundant-role": "off",
+              "heading-level": "off"
+            }
+          }
+          JSON
+          fi
+          mapfile -d '' files < <(find "$SITE_DIR" \( -name .git -o -name node_modules -o -name .github \) -prune -o -type f -name '*.html' -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No .html files found under '${SITE_DIR}'. Set SITE_DIR."
+            exit 1
+          fi
+          echo "Validating ${#files[@]} HTML file(s)"
+          npx --yes "html-validate@${HTML_VALIDATE_VERSION}" --config "$cfg" "${files[@]}"
+
+      - name: Check internal links
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit, unquote
+
+          ROOT = os.path.abspath(os.environ.get("SITE_DIR", "."))
+          PRETTY = os.environ.get("PRETTY_URLS", "true") == "true"
+          SKIP_DIRS = {".git", "node_modules", ".github"}
+          URL_ATTRS = {("a", "href"), ("link", "href"), ("script", "src"), ("img", "src"),
+                       ("source", "src"), ("iframe", "src"), ("audio", "src"), ("video", "src"),
+                       ("form", "action")}
+
+          class Page(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.links, self.ids = [], set()
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if a.get("id"):
+                      self.ids.add(a["id"])
+                  if tag == "a" and a.get("name"):
+                      self.ids.add(a["name"])
+                  for (t, attr) in URL_ATTRS:
+                      if tag == t and a.get(attr):
+                          self.links.append((a[attr].strip(), self.getpos()[0]))
+
+          def parse(path):
+              p = Page()
+              with open(path, encoding="utf-8", errors="replace") as f:
+                  p.feed(f.read())
+              return p
+
+          pages = {}
+          for dirpath, dirnames, filenames in os.walk(ROOT):
+              dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+              for name in filenames:
+                  if name.lower().endswith(".html"):
+                      full = os.path.join(dirpath, name)
+                      pages[full] = parse(full)
+
+          def locate(src, path):
+              if path == "":
+                  return src
+              base = os.path.join(ROOT, path.lstrip("/")) if path.startswith("/") \
+                  else os.path.join(os.path.dirname(src), path)
+              base = os.path.normpath(base)
+              if os.path.isdir(base):
+                  idx = os.path.join(base, "index.html")
+                  return idx if os.path.isfile(idx) else None
+              if os.path.isfile(base):
+                  return base
+              if PRETTY and os.path.isfile(base + ".html"):
+                  return base + ".html"
+              return None
+
+          errors = 0
+          checked = 0
+          for src, page in sorted(pages.items()):
+              rel = os.path.relpath(src, os.getcwd()).replace(os.sep, "/")
+              for url, line in page.links:
+                  parts = urlsplit(url)
+                  if parts.scheme or parts.netloc:
+                      continue  # external, mailto:, tel:, data:, //cdn...
+                  checked += 1
+                  target = locate(src, unquote(parts.path))
+                  if target is None:
+                      print(f"::error file={rel},line={line}::Broken link: {url}")
+                      errors += 1
+                      continue
+                  frag = unquote(parts.fragment)
+                  if frag and frag.lower() != "top" and target.lower().endswith(".html"):
+                      tp = pages.get(target) or parse(target)
+                      if frag not in tp.ids:
+                          print(f"::error file={rel},line={line}::Missing anchor #{frag} in {url}")
+                          errors += 1
+
+          print(f"Checked {checked} internal link(s) in {len(pages)} page(s), {errors} problem(s).")
+          sys.exit(1 if errors else 0)
+          PY
