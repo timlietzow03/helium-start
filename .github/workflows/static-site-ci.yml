@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# static-site-ci.yml         Template version: 1.0.0
+# static-site-ci.yml         Template version: 1.1.0
 #
 # WHAT IT DOES
 #   Two checks for hand-written static sites, no build step needed:
@@ -21,6 +21,10 @@
 #   PRETTY_URLS     "true": a link to /about is accepted if about.html or
 #                   about/index.html exists (Cloudflare Pages, Netlify and
 #                   GitHub Pages behave that way). "false": exact files only.
+#   LINK_IGNORE     optional list (one per line) of link targets that may be
+#                   missing on purpose, for example an optional, git-ignored
+#                   local-data.js. Path relative to SITE_DIR, no ./ prefix.
+#                   Added in 1.1.0 (the helium-start pilot needed it).
 #   HTML_VALIDATE_VERSION   pinned version.
 #   To change the rules, add a `.htmlvalidate.json` to the repo root; the
 #   job then uses it instead of the built-in one.
@@ -51,6 +55,8 @@ concurrency:
 env:
   SITE_DIR: "."
   PRETTY_URLS: "true"
+  LINK_IGNORE: |
+    local-data.js
   HTML_VALIDATE_VERSION: "11.18.0"
   NODE_VERSION: "22"
 
@@ -112,6 +118,7 @@ jobs:
           ROOT = os.path.abspath(os.environ.get("SITE_DIR", "."))
           PRETTY = os.environ.get("PRETTY_URLS", "true") == "true"
           SKIP_DIRS = {".git", "node_modules", ".github"}
+          IGNORE = {l.strip().removeprefix("./") for l in os.environ.get("LINK_IGNORE", "").splitlines() if l.strip()}
           URL_ATTRS = {("a", "href"), ("link", "href"), ("script", "src"), ("img", "src"),
                        ("source", "src"), ("iframe", "src"), ("audio", "src"), ("video", "src"),
                        ("form", "action")}
@@ -169,6 +176,11 @@ jobs:
                       continue  # external, mailto:, tel:, data:, //cdn...
                   checked += 1
                   target = locate(src, unquote(parts.path))
+                  if target is None and os.path.relpath(
+                          os.path.normpath(os.path.join(os.path.dirname(src), unquote(parts.path))),
+                          ROOT).replace(os.sep, "/") in IGNORE:
+                      print(f"Ignored (LINK_IGNORE): {url} in {rel}")
+                      continue
                   if target is None:
                       print(f"::error file={rel},line={line}::Broken link: {url}")
                       errors += 1
